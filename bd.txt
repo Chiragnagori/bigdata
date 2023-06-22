@@ -1,0 +1,307 @@
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class WordCountDriver {
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "word count");
+        job.setJarByClass(WordCountDriver.class);
+        job.setMapperClass(WordCountMapper.class);
+        job.setCombinerClass(WordCountReducer.class);
+        job.setReducerClass(WordCountReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+
+
+
+--------------------------------
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class WordCountMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
+    private final static IntWritable one = new IntWritable(1);
+    private Text word = new Text();
+
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        String line = value.toString();
+        String[] words = line.split("\\s+");
+        for (String word : words) {
+            this.word.set(word);
+            context.write(this.word, one);
+        }
+    }
+}
+--------------------------
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+public class WordCountReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+    private IntWritable result = new IntWritable();
+
+    public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+        int sum = 0;
+        for (IntWritable val : values) {
+            sum += val.get();
+        }
+        result.set(sum);
+        context.write(key, result);
+    }
+}
+
+hadoop jar <jar-file-name>.jar WeatherDriver <input-path> <output-path>
+
+
+
+---------------
+Weather program
+----------------
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class WeatherDriver {
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "weather analysis");
+        job.setJarByClass(WeatherDriver.class);
+        job.setMapperClass(WeatherMapper.class);
+        job.setReducerClass(WeatherReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(FloatWritable.class);
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+
+
+import java.io.IOException;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class WeatherMapper extends Mapper<LongWritable, Text, Text, FloatWritable> {
+    private Text month = new Text();
+    private FloatWritable temperature = new FloatWritable();
+
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        String line = value.toString();
+        String[] parts = line.split(",");
+        
+        // Assuming the format is: Date, Temperature
+        if (parts.length == 2) {
+            String date = parts[0].trim();
+            float temp = Float.parseFloat(parts[1].trim());
+            
+            // Extract month from the date
+            String monthStr = date.substring(5, 7);
+            
+            month.set(monthStr);
+            temperature.set(temp);
+            
+            context.write(month, temperature);
+        }
+    }
+}
+
+import java.io.IOException;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+public class WeatherReducer extends Reducer<Text, FloatWritable, Text, FloatWritable> {
+    private FloatWritable result = new FloatWritable();
+
+    public void reduce(Text key, Iterable<FloatWritable> values, Context context) throws IOException, InterruptedException {
+        float sum = 0;
+        int count = 0;
+        
+        for (FloatWritable value : values) {
+            sum += value.get();
+            count++;
+        }
+        
+        float average = sum / count;
+        result.set(average);
+        
+        context.write(key, result);
+    }
+}
+
+hadoop jar <jar-file-name>.jar WeatherDriver <input-path> <output-path>
+
+-----------------
+Multiplication
+-----------------
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class MatrixMultiplicationDriver {
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "matrix multiplication");
+        job.setJarByClass(MatrixMultiplicationDriver.class);
+        job.setMapperClass(MatrixMultiplicationMapper.class);
+        job.setReducerClass(MatrixMultiplicationReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+
+
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class MatrixMultiplicationMapper extends Mapper<Object, Text, Text, IntWritable> {
+    private Text outputKey = new Text();
+    private IntWritable outputValue = new IntWritable();
+
+    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+        // Assuming input format: matrix_name row column value
+        String[] parts = value.toString().split(" ");
+        String matrixName = parts[0];
+        int row = Integer.parseInt(parts[1]);
+        int col = Integer.parseInt(parts[2]);
+        int val = Integer.parseInt(parts[3]);
+
+        // Emit intermediate key-value pairs
+        if (matrixName.equals("A")) {
+            for (int k = 0; k < col; k++) {
+                outputKey.set(row + " " + k);
+                outputValue.set(val);
+                context.write(outputKey, outputValue);
+            }
+        } else if (matrixName.equals("B")) {
+            for (int i = 0; i < row; i++) {
+                outputKey.set(i + " " + col);
+                outputValue.set(val);
+                context.write(outputKey, outputValue);
+            }
+        }
+    }
+}
+
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+public class MatrixMultiplicationReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+    private IntWritable outputValue = new IntWritable();
+
+    public void reduce(Text key, Iterable<IntWritable> values, Context context)
+            throws IOException, InterruptedException {
+        int sum = 0;
+        for (IntWritable value : values) {
+            sum += value.get();
+        }
+
+        outputValue.set(sum);
+        context.write(key, outputValue);
+    }
+}
+
+hadoop jar <jar-file-name>.jar WeatherDriver <input-path> <output-path>
+
+
+
+
+
+
+--------------
+PIG
+----------
+
+-- Sort the data based on a specific column
+input_data = LOAD 'input.csv' USING PigStorage(',') AS (id: int, name: chararray, age: int);
+sorted_data = ORDER input_data BY age ASC;
+
+
+-- Group the data based on a specific column
+input_data = LOAD 'input.csv' USING PigStorage(',') AS (id: int, name: chararray, age: int);
+grouped_data = GROUP input_data BY age;
+
+
+-- Join two datasets based on a common field
+data1 = LOAD 'input1.csv' USING PigStorage(',') AS (id: int, name: chararray);
+data2 = LOAD 'input2.csv' USING PigStorage(',') AS (id: int, age: int);
+joined_data = JOIN data1 BY id, data2 BY id;
+
+
+-- Filter the data based on a condition
+input_data = LOAD 'input.csv' USING PigStorage(',') AS (id: int, name: chararray, age: int);
+filtered_data = FILTER input_data BY age > 25;
+
+
+
+------------
+HIVE
+-----------
+
+-- Create a table with specified columns and data types
+CREATE TABLE my_table (
+  id INT,
+  name STRING,
+  age INT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+
+-- Add a new column to an existing table
+ALTER TABLE my_table
+ADD COLUMN email STRING;
+
+-- Drop a database and all its associated tables
+DROP DATABASE my_database;
+
+
+-- Create a view based on a query
+CREATE VIEW my_view AS
+SELECT column1, column2
+FROM my_table
+WHERE condition;
+-- Query the view
+SELECT *
+FROM my_view;
+
+-- Example of a built-in function
+SELECT CONCAT(first_name, ' ', last_name) AS full_name
+FROM users;
+
+-- Register a custom function
+ADD JAR /path/to/my_function.jar;
+CREATE TEMPORARY FUNCTION my_function AS 'com.example.MyFunction';
